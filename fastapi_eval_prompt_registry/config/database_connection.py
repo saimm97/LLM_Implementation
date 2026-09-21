@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
+
 def get_sqlalchemy_session():
   url = URL.create(
     drivername=os.environ.get("DB_DRIVER"),
