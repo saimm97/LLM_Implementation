@@ -1,58 +1,77 @@
-from models import *
 from faker import Faker
-# from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, relationship
 from polyfactory.factories.sqlalchemy_factory import SQLAlchemyFactory
-from polyfactory import Use
+from polyfactory.fields import PostGenerated, Require, Use
+
+from models import (
+    EvalResult,
+    EvalResultStatusEnum,
+    EvalRunner,
+    GoldenExample,
+    OutputCategories,
+    PromptFamily,
+    PromptFamilyEnum,
+    PromptVersion,
+)
+
 
 faker = Faker()
 
-class PromptVersionsFactory(SQLAlchemyFactory[PromptVersions]):
-  __set_primary_key__ = False  
-  __tablename__ = "Prompt_versions"
-  __set_relationships__ = False
-  text = Use(lambda: faker.text())
-  version = '1.0.0'
-  is_active = Use(faker.pybool)
 
 class PromptFamilyFactory(SQLAlchemyFactory[PromptFamily]):
-    __set_primary_key__ = False  
-    __tablename__ = 'prompt_families'
-    # name = Use(faker.enum(PromptFamilyEnum))  # wrong way to do this: 
-    # name = Use(faker.random_element(elements=PromptFamilyEnum))
-    name = Use(lambda: faker.enum(PromptFamilyEnum))
-    # prompt_version_id: Mapped[int] = mapped_column(ForeignKey("prompt_versions.id"))
-
-class GoldenExamplesFactory(SQLAlchemyFactory[GoldenExamples]):
-    __set_primary_key__ = False  
-    __tablename__ = 'golden_examples'
+    __set_primary_key__ = False
     __set_relationships__ = False
 
-    input = Use(faker.text(max_nb_chars=200))
-    expected_output = Use(lambda: faker.enum(OutputCategories))
-    is_active = Use(faker.pybool)
-    # eval_results: Mapped[List["EvalResults"]] = relationship()
+    name = Use(lambda: faker.random_element(tuple(PromptFamilyEnum)))
 
-class EvalResultsFactory(SQLAlchemyFactory[EvalResults]):
-    __set_primary_key__ = False  
-    __tablename__ = 'eval_results'
+
+class PromptVersionFactory(SQLAlchemyFactory[PromptVersion]):
+    __set_primary_key__ = False
+    __set_relationships__ = False
+
+    text = Use(lambda: faker.paragraph(nb_sentences=3))
+    version = Use(lambda: faker.numerify(text="#.#.#"))
+    is_active = Use(faker.pybool)
+    prompt_family_id = Require()
+
+
+class GoldenExampleFactory(SQLAlchemyFactory[GoldenExample]):
+    __set_primary_key__ = False
     __set_relationships__ = False
 
     input = Use(lambda: faker.text(max_nb_chars=200))
-    output = Use(lambda: faker.text(max_nb_chars=200))
-    passed = Use(faker.pybool)
-    latency = Use(lambda: str(faker.random_int(min=50, max=3000)))
-    cost    = Use(lambda: faker.pyfloat(left_digits=2, right_digits=2, positive=True))
+    expected_output = Use(lambda: faker.random_element(tuple(OutputCategories)))
+    is_active = True
 
-    # FKs 
-    # golden_examples_id: Mapped[int] = mapped_column(ForeignKey("golden_examples.id"))
-    # eval_runs_id: Mapped[int] = mapped_column(ForeignKey("eval_runs.id"))
 
 class EvalRunnerFactory(SQLAlchemyFactory[EvalRunner]):
-    __set_primary_key__ = False  
-    __tablename__ = 'eval_runs'
+    __set_primary_key__ = False
     __set_relationships__ = False
 
-    p95_latency = Use(lambda: faker.pyfloat(left_digits=2, right_digits=2, positive=True))
-    accuracy = Use(lambda: faker.pyfloat(left_digits=2, right_digits=2, positive=True))
-    average_cost = Use(lambda: faker.pyfloat(left_digits=2, right_digits=2, positive=True))
-    # eval_results: Mapped[List["EvalResults"]] = relationship()
+    p95_latency_ms = Use(lambda: faker.random_int(min=5_000, max=300_000) / 100)
+    accuracy = Use(lambda: faker.random_int(min=0, max=10_000) / 10_000)
+    average_cost = Use(lambda: faker.random_int(min=0, max=100_000) / 1_000_000)
+    model_used = Use(
+        lambda: faker.random_element(("gpt-4.1-mini", "gpt-4.1", "gpt-5-mini"))
+    )
+    prompt_version_id = Require()
+
+
+class EvalResultFactory(SQLAlchemyFactory[EvalResult]):
+    __set_primary_key__ = False
+    __set_relationships__ = False
+
+    input = Use(lambda: faker.text(max_nb_chars=200))
+    predicted_category = Use(lambda: faker.random_element(tuple(OutputCategories)))
+    raw_output = Use(lambda: faker.text(max_nb_chars=100))
+    input_tokens = Use(lambda: faker.random_int(min=20, max=1_000))
+    output_tokens = Use(lambda: faker.random_int(min=1, max=300))
+    total_tokens = PostGenerated(
+        lambda _name, values: values["input_tokens"] + values["output_tokens"]
+    )
+    passed = Use(faker.pybool)
+    latency_ms = Use(lambda: faker.random_int(min=50, max=3_000))
+    cost = Use(lambda: faker.random_int(min=1, max=100_000) / 1_000_000)
+    error_message = None
+    status = EvalResultStatusEnum.COMPLETED
+    golden_example_id = Require()
+    eval_run_id = Require()
