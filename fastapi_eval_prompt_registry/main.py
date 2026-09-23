@@ -1,5 +1,4 @@
 import uvicorn
-
 from fastapi import FastAPI
 from api.routes import eval_results
 from config.database_connection import get_sqlalchemy_session
