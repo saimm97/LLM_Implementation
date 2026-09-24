@@ -3,3 +3,5 @@
 **/.env.
 *fastapi_LLM_practice/.env
 fastapi_LLM_practice/.env
+__pycache__/
+*.py[cod]
