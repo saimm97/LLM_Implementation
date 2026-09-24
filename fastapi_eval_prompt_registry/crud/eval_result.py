@@ -1,87 +1,47 @@
-from queue import Empty
-
-from sqlalchemy import Null
+from sqlalchemy import select
 from config.database_connection import get_sqlalchemy_session
 from models import EvalResult
 from sqlalchemy.exc import SQLAlchemyError
 from schemas.eval_result import EvalResultModel
-from fastapi.encoders import jsonable_encoder
-
 
 db_session = get_sqlalchemy_session()
 
 
-def get_eval_results(eval_result: EvalResult) -> [EvalResult]:
-
-    try:
-        eval_results = db_session.query(EvalResult).all()
-        if eval_results == []:
-            result = "No Record found"
-        else:
-            return eval_results
-    except SQLAlchemyError as e:
-        raise e
-    return eval_results
+def get_eval_results() -> [EvalResult]:
+    return db_session.scalars(select(EvalResult)).all()
 
 
-def show_eval_result(eval_result_id):
-
-    try:
-        eval_result = db_session.query(EvalResult).get(eval_result_id)
-        if eval_result:
-            return eval_result
-        else:
-            return f"No Record found with Id: {eval_result_id} "
-    except SQLAlchemyError as e:
-        raise e
+def show_eval_result(eval_result_id: int):
+    return db_session.get(EvalResult, eval_result_id)
 
 
 def update_eval_result(
-    eval_result_id, eval_result_model: EvalResultModel
+    eval_result_id: int, eval_result_model: EvalResultModel
 ) -> EvalResult:
     try:
-        pre_updated_obj = db_session.get(EvalResult,eval_result_id)
-        # stored_item_data = items[item_id]
+        pre_updated_obj = db_session.get(EvalResult, eval_result_id)
         if pre_updated_obj:
             dict_ = pre_updated_obj.__dict__
             stored_eval_result_model = EvalResultModel(**dict_)
-            update_data = eval_result_model.model_dump(exclude_unset=True)
+            updated_obj = eval_result_model.model_dump(exclude_unset=True)
 
-            updated_obj = stored_eval_result_model.model_copy(update=update_data)
-            # pre_updated_obj = jsonable_encoder(updated_obj) # why commented ?
-
-            for key, value in update_data.items():
+            updated_obj = stored_eval_result_model.model_copy(update=updated_obj)
+            for key, value in updated_obj.items():
                 setattr(pre_updated_obj, key, value)
 
             db_session.commit()
             db_session.refresh(pre_updated_obj)
 
-            response = pre_updated_obj
+            result = pre_updated_obj
         else:
-            response = None
-        return response
-
+            result = None
+        return result
     except SQLAlchemyError:
         raise
 
 
-def delete_eval_results(eval_result: EvalResult) -> [EvalResult]:
-
-    try:
-        eval_results = db_session.query(EvalResult).all()
-        if eval_results == []:
-            result = "No Record found"
-        else:
-            return eval_results
-    except SQLAlchemyError as e:
-        raise e
-    return eval_results
-
-
 def create_eval_result(eval_result: EvalResultModel) -> EvalResultModel:
-
     eval_result_db_object = EvalResult(**eval_result.model_dump())
-
     with db_session as session:
         session.begin()
         try:
@@ -93,3 +53,17 @@ def create_eval_result(eval_result: EvalResultModel) -> EvalResultModel:
             raise
 
     return eval_result_db_object
+
+
+def delete_eval_result(eval_result_id) -> EvalResult | None:
+    try:
+        eval_result_object = db_session.get(EvalResult, eval_result_id)
+        if eval_result_object is not None:
+            db_session.delete(eval_result_object)
+            db_session.commit()
+            return eval_result_object
+        else:
+            return None
+    except SQLAlchemyError:
+        db_session.rollback()
+        raise
