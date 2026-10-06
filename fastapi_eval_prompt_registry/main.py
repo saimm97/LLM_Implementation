@@ -1,12 +1,13 @@
 import uvicorn
 from fastapi import FastAPI
-from api.routes import eval_results, eval_runs
+from api.routes import eval_results, eval_runs, golden_examples
 from config.database_connection import get_sqlalchemy_session
 
 app = FastAPI()
 
 app.include_router(eval_results.router)
 app.include_router(eval_runs.router)
+app.include_router(golden_examples.router)
 
 @app.get("/")
 
