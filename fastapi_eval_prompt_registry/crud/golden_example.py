@@ -21,7 +21,7 @@ def create_golden_example(golden_example: GoldenExampleCreateSchema):
         golden_example_create_obj = GoldenExample(**golden_example.model_dump())
         Session.add(golden_example_create_obj)
         Session.commit()
-        Session.refresh(golden_example_create_obj)
+        Session.refresh()
         return golden_example_create_obj
     except SQLAlchemyError:
         Session.rollback()

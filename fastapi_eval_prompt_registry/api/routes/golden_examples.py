@@ -40,6 +40,6 @@ def update_golden_example(
         execeptions.raise_404_not_found("GoldenExample", golden_example_id)
     return golden_example
 
-@router.delete("/golden_example/{golden_example_id}",response_model=GoldenExampleResponseScehma)
+@router.patch("/golden_example/{golden_example_id}",response_model=GoldenExampleResponseScehma)
 def delete_golden_example(golden_example_id: int):
   return golden_example_crud.delete_golden_example(golden_example_id)
