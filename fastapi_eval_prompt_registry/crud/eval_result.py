@@ -20,18 +20,12 @@ def update_eval_result(
 ) -> EvalResult:
     try:
         pre_updated_obj = db_session.get(EvalResult, eval_result_id)
-        if pre_updated_obj:
-            dict_ = pre_updated_obj.__dict__
-            stored_eval_result_model = EvalResultModel(**dict_)
+        if pre_updated_obj:           
             updated_obj = eval_result_model.model_dump(exclude_unset=True)
-
-            updated_obj = stored_eval_result_model.model_copy(update=updated_obj)
             for key, value in updated_obj.items():
                 setattr(pre_updated_obj, key, value)
-
             db_session.commit()
             db_session.refresh(pre_updated_obj)
-
             result = pre_updated_obj
         else:
             result = None
