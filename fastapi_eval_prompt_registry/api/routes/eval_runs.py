@@ -5,7 +5,7 @@ import exceptions as exceptions
 
 router = APIRouter()
 
-@router.get("/eval_runs", response_model=[EvalRunResponseSchema])
+@router.get("/eval_runs")
 def get_eval_runs():
     return eval_run_crud.get_eval_runs()
 
