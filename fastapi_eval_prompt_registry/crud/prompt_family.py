@@ -38,6 +38,8 @@ def update_prompt_family(
             update_data = prompt_family_update.model_dump(exclude_unset=True)
             for key, value in update_data.items():
                 setattr(prompt_family_obj, key, value)
+            Session.commit()
+            Session.refresh(prompt_family_obj)
         return prompt_family_obj
     except SQLAlchemyError:
         raise
@@ -49,7 +51,6 @@ def delete_prompt_family(prompt_family_id: int):
         if prompt_family_obj is not None:
             Session.delete(prompt_family_obj)
             Session.commit()
-            Session.refresh()
         return prompt_family_obj
     except SQLAlchemyError:
         Session.rollback()
