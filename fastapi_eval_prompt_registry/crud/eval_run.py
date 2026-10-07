@@ -44,7 +44,6 @@ def delete_eval_run(eval_run_id: int):
         if eval_run_obj is not None:
             session.delete(eval_run_obj)
             session.commit()
-            session.refresh()
             return eval_run_obj
         else: 
             return None
